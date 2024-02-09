@@ -61,16 +61,16 @@ class wordle_solver:
         return score + len(self.words) * 0.2 * len(diff_letters)
     
     def guess_res(self, guess, correct_places, correct_letters):
-        self.curr_word = correct_letters
+        self.curr_word = correct_places
         
         for i, ch in enumerate(guess):
-            if correct_letters[i] == 1:
+            if correct_places[i] == 1:
                 self.words = [word for word in self.words if word[i] == ch]
-                
-            elif correct_places[i] == 1:
+            elif correct_letters[i] == 1:
                 self.words = [word for word in self.words if word[i] != ch and ch in word]
             else:
                 self.words = [word for word in self.words if not ch in word]
+                
                 
     
 def check_guess(guess):
@@ -79,11 +79,11 @@ def check_guess(guess):
     
     for i, ch in enumerate(guess):
         if ch == key[i]:
-            correct_letters[i] = 1
-        elif ch in key:
             correct_places[i] = 1
+        elif ch in key:
+            correct_letters[i] = 1
     
-    return (correct_letters, correct_places)
+    return (correct_places, correct_letters)
 
 file = open("words.txt", "r")
 all_words = file.readlines()
@@ -105,7 +105,7 @@ for key in all_words:
 
         # print(guess)
 
-        lets, places = check_guess(guess)
+        places, lets = check_guess(guess)
         solver.guess_res(guess, places, lets)
 
         # print(lets)
@@ -115,7 +115,6 @@ for key in all_words:
     max_count = max(count, max_count)
     min_count = min(count, min_count)
     counts.append(count)
-    # print(count)
 
 mean = sum(counts) / float(len(counts))
 
