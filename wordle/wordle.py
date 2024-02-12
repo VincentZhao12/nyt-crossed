@@ -5,7 +5,7 @@ class wordle_solver:
     def __init__(self):
         self.curr_word = [0, 0, 0, 0, 0]
         self.guess_num = 0
-        file = open("words.txt", "r")
+        file = open("wordle/words.txt", "r")
         self.words = file.readlines()
 
         self.words = [word[0:len(word) - 1].strip() for word in self.words]

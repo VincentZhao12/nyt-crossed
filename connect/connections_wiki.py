@@ -328,4 +328,5 @@ for i in range(0, len(connections), 4):
         print(puzzle)
     
 
-print(f'Puzzles Solved: {puzzles_solved}\tConnections Made: {connections_made}\tTries Made: {tries_made}\tConnection Find Rate: {100*float(connections_made) / tries_made}%')
+print(f'Puzzles Solved: {puzzles_solved}\tConnections Made: {connections_made}\tTries Made: {tries_made}\tConnection Find Rate: {float(connections_made) / tries_made}')
+print(f'Average Time Per Puzzle: {float(total_time) / tries_made}')
