@@ -11,6 +11,9 @@ from numpy.linalg import norm
 import heapq
 from pprint import pprint
 import wikipedia
+import sys
+import os
+import time
 
 wikipedia.set_lang("en") # Set language to English (or desired language)
 
@@ -89,7 +92,7 @@ def trial_connections(solutions):
 
 
     for word in words:
-        options = wikipedia.search(word.capitalize(), results=7)
+        options = wikipedia.search(word.capitalize(), results=10)
         for option in options:
             try:
                 summary = wikipedia.summary(option, sentences=1, auto_suggest=False)
@@ -281,6 +284,10 @@ connections = pd.read_csv("connect/data/connections.csv")
 puzzles_solved = 0
 connections_made = 0
 tries_made = 0
+total_time = 0
+puzzles_tried = 0
+old_stdout = sys.stdout
+old_stderr = sys.stderr
 
 for i in range(0, len(connections), 4):
     if len(connections) - i < 4:
@@ -293,7 +300,18 @@ for i in range(0, len(connections), 4):
         puzzle.append([row["word1"], row["word2"], row["word3"], row["word4"]])
         
     try:
+        start = time.time()
+        sys.stdout = open(os.devnull, "w")
+        sys.stderr = open(os.devnull, "w")
         res = trial_connections(solutions=puzzle)
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+        end = time.time()
+        puzzles_tried += 1
+        
+        func_time = end - start
+        
+        total_time += func_time
         
         if res["correct"] == 4:
             puzzles_solved += 1
@@ -301,10 +319,12 @@ for i in range(0, len(connections), 4):
         connections_made += res["correct"]
         tries_made += res["tries"]
         
-        print(res)
+        print(f'Correct: {res["correct"]}\tTries: {res["tries"]}\tTime: {func_time}')
     except KeyboardInterrupt as e:
+        sys.stdout = old_stdout
         break;
     except:
+        sys.stdout = old_stdout
         print(puzzle)
     
 
