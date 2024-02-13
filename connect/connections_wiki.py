@@ -18,7 +18,7 @@ import time
 wikipedia.set_lang("en") # Set language to English (or desired language)
 
 
-def remove_words(specified_words, removals):
+def remove_words(specified_words, removals): 
     for word in removals:
         specified_words = [word1 for word1 in specified_words if word[0:word.index("_")] != word1[0:word1.index("_")]]
         
@@ -327,6 +327,6 @@ for i in range(0, len(connections), 4):
         sys.stdout = old_stdout
         print(puzzle)
     
-
+print(f'On a set of {puzzles_tried} puzzles')
 print(f'Puzzles Solved: {puzzles_solved}\tConnections Made: {connections_made}\tTries Made: {tries_made}\tConnection Find Rate: {float(connections_made) / tries_made}')
 print(f'Average Time Per Puzzle: {float(total_time) / tries_made}')
