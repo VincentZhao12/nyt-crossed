@@ -1,6 +1,6 @@
 # Solving NYT Connections Games
 
-- On a set of 80 puzzles
+## On a set of 80 puzzles
 - Puzzles Solved: 12
 - Puzzle Solve Rate: 15
 - Connections Made: 94 on 415 tries.
