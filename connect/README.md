@@ -6,4 +6,4 @@
 - Connections Made: 107 on 413 tries.
 - First connection rate: 60%
 - Connection Find Rate: 25.9%
-- Average Time Per Puzzle: 83.7s.
+- Average Time Per Puzzle: 121.9s.
