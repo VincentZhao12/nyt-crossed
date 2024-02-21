@@ -103,39 +103,28 @@ def trial_connections(solutions):
             except wikipedia.exceptions.DisambiguationError as e:
                 pass
     wiki_df = pd.DataFrame(wiki_dict)
-
-
-
     dict_df = pd.read_csv("connect/data/dictionary.csv")
 
 
     dict_df["Word"] = dict_df["Word"].str.upper()
-
-
     dict_df = dict_df[dict_df["Word"].isin(words)]
-
     dict_df = dict_df.reset_index()
-
 
     combined_words = pd.concat([wiki_df["Word"], dict_df["Word"]])
     combined_defs = pd.concat([wiki_df["Definition"], dict_df["Definition"]])
 
     wiki_df = pd.DataFrame({"Word": combined_words, "Definition": combined_defs})
 
-
     wiki_df['word_number'] = wiki_df.groupby('Word').cumcount() + 1
-
     wiki_df['Word'] = wiki_df.apply(lambda row: f"{row['Word']}_{row['word_number']}", axis=1)
-
     wiki_df = wiki_df.dropna()
 
 
     wiki_df["Definition"] = wiki_df["Definition"].astype(str)
-
-
     matrix = [retriever.encode(defi) for defi in wiki_df['Definition']]
     matrix = np.array(matrix)
-
+    
+    print('data loaded')
 
     similarities = []
 
@@ -174,8 +163,18 @@ def trial_connections(solutions):
     def similarity_4(a, b, c, d):
         return relation_dict[(a, b)] + relation_dict[(a, c)] + relation_dict[(a, d)] + relation_dict[(b, c)] + relation_dict[(b, d)] + relation_dict[(c, d)]
 
-    def find_n_groups(n, words):
-        sim_scores = {}
+    def find_groups(words):
+        df_dict_scores = {
+            'a': [],
+            'a_origin': [],
+            'b': [],
+            'b_origin': [],
+            'c': [],
+            'c_origin': [],
+            'd': [],
+            'd_origin': [],
+            'sim': [],
+        }
         for i, a in enumerate(words):
             printProgressBar(iteration=i, total=len(words))
             for j in range(i + 1, len(words)):
@@ -197,95 +196,95 @@ def trial_connections(solutions):
                             continue
                         if ((a, d) not in relation_dict) or ((b, d) not in relation_dict) or ((c, d) not in relation_dict):
                             continue
-                            
-                        sim_scores[(a, b, c, d)] = similarity_4(a, b, c, d)
-
-        sim_heap = []
-        for (a, b, c, d), score in sim_scores.items():
-            heapq.heappush(sim_heap, (score, [a, b, c, d]))
+                        
+                        df_dict_scores["a"].append(a)
+                        df_dict_scores["a_origin"].append(a.split('_')[0])
+                        df_dict_scores["b"].append(b)
+                        df_dict_scores["b_origin"].append(b.split('_')[0])
+                        df_dict_scores["c"].append(c)
+                        df_dict_scores["c_origin"].append(c.split('_')[0])
+                        df_dict_scores["d"].append(d)
+                        df_dict_scores["d_origin"].append(d.split('_')[0])
+                        df_dict_scores["sim"].append(similarity_4(a, b, c, d))
         
-        return heapq.nlargest(n, sim_heap) 
+        return pd.DataFrame.from_dict(df_dict_scores)
+    
+    def not_one_away(df):
+        winning_row = df.iloc[0]
+        words = [winning_row['a_origin'], winning_row['b_origin'], winning_row['c_origin'], winning_row['d_origin']]
+        words = set(words)
+        df = df[~((df['a_origin'].isin(words)) & (df['b_origin'].isin(words)) & (df['c_origin'].isin(words)))]
+        df = df[~((df['b_origin'].isin(words)) & (df['c_origin'].isin(words)) & (df['d_origin'].isin(words)))]
+        df = df[~((df['c_origin'].isin(words)) & (df['d_origin'].isin(words)) & (df['a_origin'].isin(words)))]
+        df = df[~((df['d_origin'].isin(words)) & (df['a_origin'].isin(words)) & (df['b_origin'].isin(words)))]
+        
+        return df
+
+    def check_win(df):
+        row = df.iloc[0]
+        
+        for sol in solutions:
+            solution_set = set(sol)
+            if (row['a_origin'] in solution_set) and (row['b_origin'] in solution_set) and (row['c_origin'] in solution_set) and (row['d_origin'] in solution_set):
+                return True
+            
+        return False
+        
+    def check_one_away(df):
+        row = df.iloc[0]
+        
+        for sol in solutions:
+            solution_set = set(sol)
+            if (row['a_origin'] in solution_set) and (row['b_origin'] in solution_set) and (row['c_origin'] in solution_set):
+                return True
+            if (row['b_origin'] in solution_set) and (row['c_origin'] in solution_set) and (row['d_origin'] in solution_set):
+                return True
+            if (row['c_origin'] in solution_set) and (row['d_origin'] in solution_set) and (row['a_origin'] in solution_set):
+                return True
+            if (row['d_origin'] in solution_set) and (row['a_origin'] in solution_set) and (row['b_origin'] in solution_set):
+                return True
+            
+        return False
+        
+    def after_win(df):
+        winning_row = df.iloc[0]
+        words = [winning_row['a_origin'], winning_row['b_origin'], winning_row['c_origin'], winning_row['d_origin']]
+        words = set(words)
+        print(words)
+        df = df[~((df['a_origin'].isin(words)) | (df['b_origin'].isin(words)) | (df['c_origin'].isin(words)) | (df['d_origin'].isin(words)))]
+        
+        return df
+    
+    answers_df = find_groups(specified_words)
+    answers_df = answers_df.sort_values("sim", ascending=False)
     
     tries = 0
     correct = 0
-    result = find_n_groups(4, specified_words)
     
-    correct_idx = -1
-    mistakes = 0
-    
-    for i, (_, row) in enumerate(result):
-        found = False
-        for sol in solutions:
-            if set([word[0:word.index("_")] for word in row]) == set(sol):
-                correct += 1
-                found = True
-                break
+    while (tries - correct) < 4 and correct < 3:
         tries += 1
-        
-        if found:
-            correct_idx = i
-            break
+        if check_win(answers_df):
+            answers_df = after_win(answers_df)
+            correct += 1
+        elif not check_one_away(answers_df):
+            answers_df = not_one_away(answers_df)
         else:
-            mistakes += 1
-        
-    if correct_idx == -1:
-        return {"correct": correct, "tries": tries}
+            answers_df = answers_df.iloc[1:, :]
 
-    specified_words = remove_words(specified_words, result[correct_idx][1])
-
-    result = find_n_groups(4 - mistakes, specified_words)
-    
-    correct_idx = -1
-    
-    for i, (_, row) in enumerate(result):
-        found = False
-        for sol in solutions:
-            if set([word[0:word.index("_")] for word in row]) == set(sol):
-                correct += 1
-                found = True
-                break
+    if correct == 3:
+        correct += 1
         tries += 1
-        
-        if found:
-            correct_idx = i
-            break
-        else:
-            mistakes += 1
-        
-    if correct_idx == -1:
-        return {"correct": correct, "tries": tries}
-    
-    specified_words = remove_words(specified_words, result[correct_idx][1])
 
-    result = find_n_groups(4 - mistakes, specified_words)
-    
-    correct_idx = -1
-    
-    for i, (_, row) in enumerate(result):
-        found = False
-        for sol in solutions:
-            if set([word[0:word.index("_")] for word in row]) == set(sol):
-                correct += 1
-                found = True
-                break
-        tries += 1
         
-        if found:
-            correct_idx = i
-            break
-        
-    if correct_idx == -1:
-        return {"correct": correct, "tries": tries}
-        
-    return {"correct": correct + 1, "tries": tries + 1}
+    return {"correct": correct, "tries": tries}
 
 connections = pd.read_csv("connect/data/connections.csv")
 
-puzzles_solved = 0
-connections_made = 0
-tries_made = 0
-total_time = 0
-puzzles_tried = 0
+times = []
+connections_made = []
+tries = []
+puzzles = []
+
 old_stdout = sys.stdout
 old_stderr = sys.stderr
 
@@ -307,26 +306,32 @@ for i in range(0, len(connections), 4):
         sys.stdout = old_stdout
         sys.stderr = old_stderr
         end = time.time()
-        puzzles_tried += 1
         
         func_time = end - start
         
-        total_time += func_time
+        times.append(func_time)
         
         if res["correct"] == 4:
-            puzzles_solved += 1
+            puzzles.append(1)
+        else:
+            puzzles.append(0)
         
-        connections_made += res["correct"]
-        tries_made += res["tries"]
+        connections_made.append(res["correct"])
+        tries.append(res["tries"])
         
         print(f'Correct: {res["correct"]}\tTries: {res["tries"]}\tTime: {func_time}')
     except KeyboardInterrupt as e:
         sys.stdout = old_stdout
         break;
-    except:
+    except Exception as e:
         sys.stdout = old_stdout
+        print(e)
         print(puzzle)
     
-print(f'On a set of {puzzles_tried} puzzles')
-print(f'Puzzles Solved: {puzzles_solved}\tConnections Made: {connections_made}\tTries Made: {tries_made}\tConnection Find Rate: {float(connections_made) / tries_made}')
-print(f'Average Time Per Puzzle: {float(total_time) / tries_made}')
+print(f'On a set of {len(puzzles)} puzzles')
+print(f'Puzzles Solved: {sum(puzzles)}\tConnections Made: {sum(connections_made)}\tTries Made: {sum(tries)}\tConnection Find Rate: {float(sum(connections_made)) / sum(tries)}')
+print(f'Average Time Per Puzzle: {float(sum(times)) / len(times)}s\tBenchmarking took {sum(times)}s')
+print(times)
+print(puzzles)
+print(connections_made)
+print(tries)
