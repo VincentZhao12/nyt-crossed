@@ -1,7 +1,7 @@
 # Solving NYT Connections Games
 
 ## On a set of 87 puzzles
-- Puzzles Solved: 12
+- Puzzles Solved: 15
 - Puzzle Solve Rate: 17.2%
 - Connections Made: 107 on 413 tries.
 - First connection rate: 60%
