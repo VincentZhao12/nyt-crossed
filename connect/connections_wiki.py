@@ -14,6 +14,38 @@ import wikipedia
 import sys
 import os
 import time
+import asyncio
+import aiohttp
+from functools import lru_cache
+from concurrent.futures import ThreadPoolExecutor
+
+def remove_top(df):
+    winning_row = df.iloc[0]
+    words = [winning_row['a_origin'], winning_row['b_origin'], winning_row['c_origin'], winning_row['d_origin']]
+    words = set(words)
+    df = df[~((df['a_origin'].isin(words)) & (df['b_origin'].isin(words)) & (df['c_origin'].isin(words)) & (df['d_origin'].isin(words)))]
+    
+    return df
+
+summaries = []
+
+def scrape_page(url):
+    res = requests.get(url)
+    soup = BeautifulSoup(res.content, 'html.parser')
+    
+
+    paragraphs = soup.find('div', {'id': 'mw-content-text'}).find_all('p')
+
+    summary_element = None
+    for paragraph in paragraphs:
+        if paragraph.get_text(strip=True): 
+            summary_element = paragraph
+            break
+
+    summary = summary_element.get_text().strip()
+
+    if len(summary) > 5:
+        summaries.append(summary)
 
 wikipedia.set_lang("en") # Set language to English (or desired language)
 
@@ -23,31 +55,6 @@ def remove_words(specified_words, removals):
         specified_words = [word1 for word1 in specified_words if word[0:word.index("_")] != word1[0:word1.index("_")]]
         
     return specified_words
-
-
-def cosine_similarity(a, b):
-    return np.dot(a,b)/(norm(a)*norm(b))
-
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-    """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
-    # Print New Line on Complete
-    if iteration == total: 
-        print()
 
 
 device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
@@ -71,37 +78,19 @@ def trial_connections(solutions):
             
     wiki_dict = {"Word": [], "Definition": []}
     
-    soups = [BeautifulSoup(requests.get(f'{base_url}{word.capitalize()}').content, 'html.parser') for word in words]
-
-    for i, soup in enumerate(soups):
-        content = soup.find("div", id="mw-content-text")
-
-        first_para = content.find("p").text
-
-        items = [item.text for item in content.find_all("li")]
-
-        if f'may refer to:' in first_para:
-            for item in items:
-                item = item.lower()
-                if words[i] in item:
-                    item = item.sub(words[i].lower(), "")
-
-                if len(item) > 5:
-                    wiki_dict["Word"].append(words[i])
-                    wiki_dict["Definition"].append("".join(item))
-
-
     for word in words:
         options = wikipedia.search(word.capitalize(), results=10)
-        for option in options:
-            try:
-                summary = wikipedia.summary(option, sentences=1, auto_suggest=False)
-                # summary = page.summary
-                if len(summary) > 10:
-                    wiki_dict["Word"].append(word)
-                    wiki_dict["Definition"].append(summary)
-            except wikipedia.exceptions.DisambiguationError as e:
-                pass
+
+        urls = [f'{base_url}{option.replace(" ", "_")}' for option in options]
+        
+        summaries = []
+        
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            executor.map(scrape_page, urls)
+        for summary in summaries:
+            wiki_dict["Word"].append(word)
+            wiki_dict["Definition"].append(summary.strip())
+
     wiki_df = pd.DataFrame(wiki_dict)
     dict_df = pd.read_csv("connect/data/dictionary.csv")
 
@@ -124,24 +113,27 @@ def trial_connections(solutions):
     matrix = [retriever.encode(defi) for defi in wiki_df['Definition']]
     matrix = np.array(matrix)
     
-    print('data loaded')
+    @lru_cache(maxsize=None)
+    def cosine_similarity(c, r):
+        a = matrix[c]
+        b = matrix[r]
+        return np.dot(a,b)/(norm(a)*norm(b))
 
     similarities = []
 
     for i in range(len(matrix)):
-        a = matrix[i]
         for j in range(i, len(matrix)):
-            b = matrix[j]
             word1 = wiki_df.iloc[i]["Word"]
             word2 = wiki_df.iloc[j]["Word"]
             if word1[0: word1.index("_")] != word2[0: word2.index("_")]:
-                sim = cosine_similarity(a, b)/math.dist(a, b)
+                
+                sim = cosine_similarity(i, j)
                 if math.isinf(sim):
                     sim = 1
                 similarities.append([wiki_df.iloc[i]["Word"], wiki_df.iloc[j]["Word"], sim])
                 
     df = pd.DataFrame(similarities, columns=["word_1", "word_2", "similarity"])
-
+    
     df = df[df["similarity"] > 0.03]
 
 
@@ -160,8 +152,10 @@ def trial_connections(solutions):
 
     specified_words = list(wiki_df["Word"])
 
+    # @lru_cache(maxsize=None)
     def similarity_4(a, b, c, d):
         return relation_dict[(a, b)] + relation_dict[(a, c)] + relation_dict[(a, d)] + relation_dict[(b, c)] + relation_dict[(b, d)] + relation_dict[(c, d)]
+
 
     def find_groups(words):
         df_dict_scores = {
@@ -176,7 +170,6 @@ def trial_connections(solutions):
             'sim': [],
         }
         for i, a in enumerate(words):
-            printProgressBar(iteration=i, total=len(words))
             for j in range(i + 1, len(words)):
                 b = words[j]
                 if a[0:a.index("_")] == b[0:b.index("_")]:
@@ -206,7 +199,6 @@ def trial_connections(solutions):
                         df_dict_scores["d"].append(d)
                         df_dict_scores["d_origin"].append(d.split('_')[0])
                         df_dict_scores["sim"].append(similarity_4(a, b, c, d))
-        
         return pd.DataFrame.from_dict(df_dict_scores)
     
     def not_one_away(df):
@@ -250,8 +242,15 @@ def trial_connections(solutions):
         winning_row = df.iloc[0]
         words = [winning_row['a_origin'], winning_row['b_origin'], winning_row['c_origin'], winning_row['d_origin']]
         words = set(words)
-        print(words)
         df = df[~((df['a_origin'].isin(words)) | (df['b_origin'].isin(words)) | (df['c_origin'].isin(words)) | (df['d_origin'].isin(words)))]
+        
+        return df
+    
+    def remove_top(df):
+        winning_row = df.iloc[0]
+        words = [winning_row['a_origin'], winning_row['b_origin'], winning_row['c_origin'], winning_row['d_origin']]
+        words = set(words)
+        df = df[~((df['a_origin'].isin(words)) & (df['b_origin'].isin(words)) & (df['c_origin'].isin(words)) & (df['d_origin'].isin(words)))]
         
         return df
     
@@ -269,7 +268,7 @@ def trial_connections(solutions):
         elif not check_one_away(answers_df):
             answers_df = not_one_away(answers_df)
         else:
-            answers_df = answers_df.iloc[1:, :]
+            answers_df = remove_top(answers_df)
 
     if correct == 3:
         correct += 1
@@ -300,11 +299,11 @@ for i in range(0, len(connections), 4):
         
     try:
         start = time.time()
-        sys.stdout = open(os.devnull, "w")
-        sys.stderr = open(os.devnull, "w")
+        # sys.stdout = open(os.devnull, "w")
+        # sys.stderr = open(os.devnull, "w")
         res = trial_connections(solutions=puzzle)
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
+        # sys.stdout = old_stdout
+        # sys.stderr = old_stderr
         end = time.time()
         
         func_time = end - start
