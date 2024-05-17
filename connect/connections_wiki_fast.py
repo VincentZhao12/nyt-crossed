@@ -10,6 +10,7 @@ import wikipedia
 from concurrent.futures import ThreadPoolExecutor
 import sys
 import time
+import re
 
 base_url = "https://en.wikipedia.org/wiki/"
 
