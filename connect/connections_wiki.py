@@ -6,18 +6,24 @@ import math
 import re
 from sentence_transformers import SentenceTransformer
 import torch
-from sklearn.feature_extraction.text import TfidfVectorizer
 from numpy.linalg import norm
-import heapq
 from pprint import pprint
 import wikipedia
 import sys
-import os
 import time
-import asyncio
-import aiohttp
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
+
+def get_first_sentence(text):
+    pattern = re.compile(r'([.!?])\s+|([.!?])$')
+    match = pattern.search(text)
+    
+    if match:
+        end_index = match.end()
+        return text[:end_index].strip()
+    else:
+        return text.strip()
+
 
 def remove_top(df):
     winning_row = df.iloc[0]
@@ -28,6 +34,17 @@ def remove_top(df):
     return df
 
 summaries = []
+
+def get_first_sentence(text):
+    pattern = re.compile(r'([.!?])\s+|([.!?])$')
+    match = pattern.search(text)
+    
+    if match:
+        end_index = match.end()
+        return text[:end_index].strip()
+    else:
+        return text.strip()
+
 
 def scrape_page(url):
     res = requests.get(url)
@@ -45,7 +62,7 @@ def scrape_page(url):
     summary = summary_element.get_text().strip()
 
     if len(summary) > 5:
-        summaries.append(summary)
+        summaries.append(get_first_sentence(summary))
 
 wikipedia.set_lang("en") # Set language to English (or desired language)
 
@@ -68,7 +85,6 @@ print("sentence embedder loaded")
 
 base_url = "https://en.wikipedia.org/wiki/"
 
-
 def trial_connections(solutions):
     words = []
     
@@ -77,9 +93,10 @@ def trial_connections(solutions):
             words.append(word)
             
     wiki_dict = {"Word": [], "Definition": []}
+    global summaries
     
     for word in words:
-        options = wikipedia.search(word.capitalize(), results=10)
+        options = wikipedia.search(word.capitalize(), results=3)
 
         urls = [f'{base_url}{option.replace(" ", "_")}' for option in options]
         
@@ -108,34 +125,36 @@ def trial_connections(solutions):
     wiki_df['Word'] = wiki_df.apply(lambda row: f"{row['Word']}_{row['word_number']}", axis=1)
     wiki_df = wiki_df.dropna()
 
-
     wiki_df["Definition"] = wiki_df["Definition"].astype(str)
     matrix = [retriever.encode(defi) for defi in wiki_df['Definition']]
     matrix = np.array(matrix)
     
-    @lru_cache(maxsize=None)
-    def cosine_similarity(c, r):
-        a = matrix[c]
-        b = matrix[r]
+    
+    
+    def cosine_similarity(a, b):
         return np.dot(a,b)/(norm(a)*norm(b))
 
     similarities = []
+    
+    prefixes = [a.split('_')[0] for a in wiki_df["Word"]]
+    wiki_df = wiki_df.reset_index()
+    words = wiki_df["Word"]
 
     for i in range(len(matrix)):
-        for j in range(i, len(matrix)):
-            word1 = wiki_df.iloc[i]["Word"]
-            word2 = wiki_df.iloc[j]["Word"]
-            if word1[0: word1.index("_")] != word2[0: word2.index("_")]:
-                
-                sim = cosine_similarity(i, j)
+        a = matrix[i]
+        for j in range(i + 1, len(matrix)):
+            b = matrix[j]
+            word1 = words[i]
+            word2 = words[j]
+            if prefixes[i] != prefixes[j]:
+                sim = cosine_similarity(a, b)/math.dist(a, b)
                 if math.isinf(sim):
                     sim = 1
-                similarities.append([wiki_df.iloc[i]["Word"], wiki_df.iloc[j]["Word"], sim])
+                similarities.append([words[i], words[j], sim])
                 
     df = pd.DataFrame(similarities, columns=["word_1", "word_2", "similarity"])
     
-    df = df[df["similarity"] > 0.05]
-
+    # df = df[df["similarity"] > 0.03]
 
     relation_dict = {}
 
@@ -169,35 +188,31 @@ def trial_connections(solutions):
             'd_origin': [],
             'sim': [],
         }
+        
+        prefixes = [a.split('_')[0] for a in words]
+        
         for i, a in enumerate(words):
             for j in range(i + 1, len(words)):
+                if prefixes[j] == prefixes[i]:
+                    continue
                 b = words[j]
-                if a[0:a.index("_")] == b[0:b.index("_")]:
-                    continue
-                if (a, b) not in relation_dict:
-                    continue
                 for k in range(j + 1, len(words)):
+                    if prefixes[k] in {prefixes[i], prefixes[j]}:
+                        continue
                     c = words[k]
-                    if a[0:a.index("_")] == c[0:c.index("_")] or b[0:b.index("_")] == c[0:c.index("_")]:
-                        continue
-                    if (a, c) not in relation_dict or (b, c) not in relation_dict:
-                        continue
                     for l in range(k + 1, len(words)):
-                        d = specified_words[l]
-                        
-                        if a[0:a.index("_")] == d[0:d.index("_")] or b[0:b.index("_")] == d[0:d.index("_")] or c[0:c.index("_")] == d[0:d.index("_")]:
+                        if prefixes[l] in {prefixes[i], prefixes[j], prefixes[k]}:
                             continue
-                        if ((a, d) not in relation_dict) or ((b, d) not in relation_dict) or ((c, d) not in relation_dict):
-                            continue
+                        d = words[l]
                         
                         df_dict_scores["a"].append(a)
-                        df_dict_scores["a_origin"].append(a.split('_')[0])
+                        df_dict_scores["a_origin"].append(prefixes[i])
                         df_dict_scores["b"].append(b)
-                        df_dict_scores["b_origin"].append(b.split('_')[0])
+                        df_dict_scores["b_origin"].append(prefixes[j])
                         df_dict_scores["c"].append(c)
-                        df_dict_scores["c_origin"].append(c.split('_')[0])
+                        df_dict_scores["c_origin"].append(prefixes[k])
                         df_dict_scores["d"].append(d)
-                        df_dict_scores["d_origin"].append(d.split('_')[0])
+                        df_dict_scores["d_origin"].append(prefixes[l])
                         df_dict_scores["sim"].append(similarity_4(a, b, c, d))
         return pd.DataFrame.from_dict(df_dict_scores)
     
@@ -247,8 +262,8 @@ def trial_connections(solutions):
         return df
     
     def remove_top(df):
-        winning_row = df.iloc[0]
-        words = [winning_row['a_origin'], winning_row['b_origin'], winning_row['c_origin'], winning_row['d_origin']]
+        top = df.iloc[0]
+        words = [top['a_origin'], top['b_origin'], top['c_origin'], top['d_origin']]
         words = set(words)
         df = df[~((df['a_origin'].isin(words)) & (df['b_origin'].isin(words)) & (df['c_origin'].isin(words)) & (df['d_origin'].isin(words)))]
         
@@ -277,7 +292,7 @@ def trial_connections(solutions):
         
     return {"correct": correct, "tries": tries}
 
-connections = pd.read_csv("connect/data/connections.csv")
+connections = pd.read_csv("connect/data/connections2.csv")
 
 times = []
 connections_made = []
@@ -322,10 +337,6 @@ for i in range(0, len(connections), 4):
     except KeyboardInterrupt as e:
         sys.stdout = old_stdout
         break;
-    except Exception as e:
-        sys.stdout = old_stdout
-        print(e)
-        print(puzzle)
     
 print(f'On a set of {len(puzzles)} puzzles')
 print(f'Puzzles Solved: {sum(puzzles)}\tConnections Made: {sum(connections_made)}\tTries Made: {sum(tries)}\tConnection Find Rate: {float(sum(connections_made)) / sum(tries)}')

@@ -33,7 +33,6 @@ def cosine_similarity(a, b):
         return 0
     return dot / norms
 
-@lru_cache(maxsize=None) 
 def scrape_page(url):
     res = requests.get(url)
     soup = BeautifulSoup(res.content, 'html.parser')
@@ -60,6 +59,8 @@ def remove_words(specified_words, removals):
 
 def make_wiki_df(words):
     wiki_dict = {"Word": [], "Definition": []}
+    
+    global summaries
     
     for word in words:
         options = wikipedia.search(word.capitalize(), results=10)

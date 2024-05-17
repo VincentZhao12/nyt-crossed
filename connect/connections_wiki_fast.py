@@ -20,6 +20,17 @@ summaries = []
 def cosine_similarity(a, b):
     return np.dot(a,b)/(norm(a)*norm(b))
 
+def get_first_sentence(text):
+    pattern = re.compile(r'([.!?])\s+|([.!?])$')
+    match = pattern.search(text)
+    
+    if match:
+        end_index = match.end()
+        return text[:end_index].strip()
+    else:
+        return text.strip()
+
+
 def scrape_page(url):
     res = requests.get(url)
     soup = BeautifulSoup(res.content, 'html.parser')
@@ -36,7 +47,7 @@ def scrape_page(url):
     summary = summary_element.get_text().strip()
 
     if len(summary) > 5:
-        summaries.append(summary)
+        summaries.append(get_first_sentence(summary))
 
 def remove_words(specified_words, removals): 
     for word in removals:
@@ -66,9 +77,9 @@ def trial_connections(solutions):
             words.append(word)
             
     wiki_dict = {"Word": [], "Definition": []}
-    
+    global summaries
     for word in words:
-        options = wikipedia.search(word.capitalize(), results=10)
+        options = wikipedia.search(word.capitalize(), results=5)
 
         urls = [f'{base_url}{option.replace(" ", "_")}' for option in options]
         
@@ -76,6 +87,7 @@ def trial_connections(solutions):
         
         with ThreadPoolExecutor(max_workers=4) as executor:
             executor.map(scrape_page, urls)
+
         for summary in summaries:
             wiki_dict["Word"].append(word)
             wiki_dict["Definition"].append(summary.strip())
@@ -161,6 +173,7 @@ def trial_connections(solutions):
             'd_origin': [],
             'sim': [],
         }
+        
         for i, a in enumerate(words):
             for j in range(i + 1, len(words)):
                 b = words[j]
@@ -249,7 +262,7 @@ def trial_connections(solutions):
         
     return {"correct": correct, "tries": tries}
 
-connections = pd.read_csv("connect/data/connections.csv")
+connections = pd.read_csv("connect/data/connections2.csv")
 
 times = []
 connections_made = []
