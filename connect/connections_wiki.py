@@ -60,7 +60,7 @@ def remove_words(specified_words, removals):
 device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
 
 retriever = SentenceTransformer(
-    "paraphrase-MiniLM-L6-v2",
+    "all-MiniLM-L6-v2",
     device = device
 )
 
@@ -134,7 +134,7 @@ def trial_connections(solutions):
                 
     df = pd.DataFrame(similarities, columns=["word_1", "word_2", "similarity"])
     
-    df = df[df["similarity"] > 0.03]
+    df = df[df["similarity"] > 0.05]
 
 
     relation_dict = {}

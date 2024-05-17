@@ -46,9 +46,10 @@ def remove_words(specified_words, removals):
 
 
 device = torch.cuda.current_device() if torch.cuda.is_available() else 'cpu'
+# device = torch.device("mps")
 
 retriever = SentenceTransformer(
-    "paraphrase-MiniLM-L6-v2",
+    "all-MiniLM-L6-v2",
     device = device
 )
 
