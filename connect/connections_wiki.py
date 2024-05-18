@@ -95,8 +95,10 @@ def trial_connections(solutions):
     wiki_dict = {"Word": [], "Definition": []}
     global summaries
     
+    start = time.time()
+    
     for word in words:
-        options = wikipedia.search(word.capitalize(), results=3)
+        options = wikipedia.search(word.capitalize(), results=5)
 
         urls = [f'{base_url}{option.replace(" ", "_")}' for option in options]
         
@@ -111,10 +113,13 @@ def trial_connections(solutions):
     wiki_df = pd.DataFrame(wiki_dict)
     dict_df = pd.read_csv("connect/data/dictionary.csv")
 
-
-    dict_df["Word"] = dict_df["Word"].str.upper()
-    dict_df = dict_df[dict_df["Word"].isin(words)]
-    dict_df = dict_df.reset_index()
+    filtered_dict = pd.DataFrame(columns=dict_df.columns)
+    
+    for word in words:
+        first_instance = dict_df[dict_df['Word'] == word].head(5)
+        filtered_dict = pd.concat([filtered_dict, first_instance], ignore_index=True)
+            
+    dict_df = filtered_dict
 
     combined_words = pd.concat([wiki_df["Word"], dict_df["Word"]])
     combined_defs = pd.concat([wiki_df["Definition"], dict_df["Definition"]])
@@ -128,8 +133,6 @@ def trial_connections(solutions):
     wiki_df["Definition"] = wiki_df["Definition"].astype(str)
     matrix = [retriever.encode(defi) for defi in wiki_df['Definition']]
     matrix = np.array(matrix)
-    
-    
     
     def cosine_similarity(a, b):
         return np.dot(a,b)/(norm(a)*norm(b))
@@ -333,10 +336,14 @@ for i in range(0, len(connections), 4):
         connections_made.append(res["correct"])
         tries.append(res["tries"])
         
-        print(f'Correct: {res["correct"]}\tTries: {res["tries"]}\tTime: {func_time}')
+        print(f'Trial {int(i / 4) +  1}: Correct: {res["correct"]}\tTries: {res["tries"]}\tTime: {func_time}')
     except KeyboardInterrupt as e:
         sys.stdout = old_stdout
         break;
+    except Exception as e:
+        sys.stdout = old_stdout
+        print(e)
+        print(puzzle)
     
 print(f'On a set of {len(puzzles)} puzzles')
 print(f'Puzzles Solved: {sum(puzzles)}\tConnections Made: {sum(connections_made)}\tTries Made: {sum(tries)}\tConnection Find Rate: {float(sum(connections_made)) / sum(tries)}')
