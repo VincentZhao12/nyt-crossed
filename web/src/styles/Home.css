@@ -1,0 +1,46 @@
+.home {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: #f5f5f5;
+}
+
+.home h1 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.home p {
+    text-align: center;
+    color: rgb(130, 129, 129);
+}
+
+.actions {
+    display: flex;
+    justify-content: center;
+    width: 50%;
+    margin-top: 2rem;
+}
+
+.actions > * {
+    margin: 1rem;
+    width: 10rem;
+}
+
+.wordle {
+    background-color: var(--wordle-main);
+}
+
+.wordle:hover {
+    background-color: var(--wordle-light);
+}
+
+.connections {
+    background-color: var(--connections-main);
+}
+
+.connections:hover {
+    background-color: var(--connections-light);
+}

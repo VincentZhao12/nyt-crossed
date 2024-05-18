@@ -1,0 +1,17 @@
+.nav {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-start;
+}
+
+.nav > * {
+    margin: 0 0 0 1rem;
+}
+
+#connections-link:hover {
+    color: var(--connections-main);
+}
+
+#wordle-link:hover {
+    color: var(--wordle-main);
+}
