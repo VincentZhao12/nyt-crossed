@@ -1,13 +1,19 @@
 from flask import Flask, request
 from connections import find_connections
+from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
+
+cors = CORS(app)
+
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 @app.route("/")
 def home():
     return "nyt crossed app backend"
 
 @app.route("/connections", methods=['POST'])
+@cross_origin()
 def connections():
     if "words" not in request.json:
         return "No words passed to server", 401
