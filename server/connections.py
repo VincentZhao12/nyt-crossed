@@ -143,15 +143,9 @@ def find_connections(words):
         relation_dict[key1] = n["similarity"]
         relation_dict[key2] = n["similarity"]
 
-    df_dict_scores = {
-        'a': [],
-        'b': [],
-        'c': [],
-        'd': [],
-        'sim': [],
-    }
+    df_dict_scores = []
     
-    for i, a in enumerate(words):
+    for i, a in enumerate(words): 
         for j in range(i + 1, len(words)):
             b = words[j]
             for k in range(j + 1, len(words)):
@@ -159,10 +153,9 @@ def find_connections(words):
                 for l in range(k + 1, len(words)):
                     d = words[l]
                     
-                    df_dict_scores["a"].append(a)
-                    df_dict_scores["b"].append(b)
-                    df_dict_scores["c"].append(c)
-                    df_dict_scores["d"].append(d)
-                    df_dict_scores["sim"].append(similarity_4(a, b, c, d))
-    
-    return df_dict_scores
+                    df_dict_scores.append({
+                        "words": [a, b, c, d],
+                        "similarity": similarity_4(a, b, c, d)
+                    })
+                    
+    return sorted(df_dict_scores, key=lambda x: x["similarity"], reverse=True)

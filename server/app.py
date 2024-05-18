@@ -1,10 +1,5 @@
 from flask import Flask, request
-# from connections import find_connections
-import json
-
-data = {}
-with open('data.json') as json_file:
-    data = json.load(json_file)
+from connections import find_connections
 
 app = Flask(__name__)
 
@@ -29,8 +24,8 @@ def connections():
     
     try:
         print("Finding Connections")
-        # res = find_connections(words)
-        return data
+        res = find_connections(words)
+        return res
     except Exception as e:
         return f'Error: {e} occurred when finding connections', 500
 
