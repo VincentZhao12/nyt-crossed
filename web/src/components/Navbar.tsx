@@ -7,7 +7,9 @@ interface NavbarProps {}
 const Navbar: FC<NavbarProps> = () => {
     return (
         <div className="nav">
-            <h1>NYT Crossed</h1>
+            <Link to="/">
+                <h1>NYT Crossed</h1>
+            </Link>
             <Link to="/connections">
                 <h3 id="connections-link">Connections</h3>
             </Link>
