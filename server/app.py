@@ -25,7 +25,8 @@ def connections():
     if type(words) is not list:
         return 'Invalid datatype for "words"', 402
     
-    if len(words) != 16:
+    n = len(words)
+    if n < 4 or n % 4 != 0:
         return 'Invalid length for "words"', 403
     
     try:
