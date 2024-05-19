@@ -1,4 +1,4 @@
-import React, { FC, useEffect } from 'react';
+import React, { FC } from 'react';
 import '../styles/ConnectionsPopup.css';
 import { MdClose } from 'react-icons/md';
 
@@ -19,9 +19,6 @@ const Popup: FC<PopupProps> = ({
     onNotThree,
     words,
 }) => {
-    useEffect(() => {
-        console.log(words, words.length);
-    }, [words]);
     if (!isOpen) return null;
 
     return (
