@@ -96,7 +96,6 @@ const Connections: FC<ConnectionsProps> = () => {
                 requestOptions,
             );
             if (!response.ok) {
-                console.log('hki');
                 throw await response.text();
             }
             const suggestions = await response.json();
