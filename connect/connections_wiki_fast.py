@@ -240,11 +240,28 @@ def trial_connections(solutions):
         
         return df
     
+    def after_one_away(df):
+        # winning_row = df.iloc[0]
+        # words = [winning_row['a_origin'], winning_row['b_origin'], winning_row['c_origin'], winning_row['d_origin']]
+        # words = set(words)
+        
+        # for i, row in df.iterrows():
+        #     row_words = [row['a_origin'], row['b_origin'], row['c_origin'], row['d_origin']]
+        #     count = len([word for word in row_words if word in words])
+            
+        #     if count == 3:
+        #         row['sim'] *= 1.15
+
+        df = df.iloc[1:,:]
+        
+        return df.sort_values("sim", ascending=False)
+    
     answers_df = find_groups(words)
     answers_df = answers_df.sort_values("sim", ascending=False)
     
     tries = 0
     correct = 0
+    # print("klasjflsa")
     
     while (tries - correct) < 4 and correct < 3:
         tries += 1
@@ -309,6 +326,7 @@ for i in range(0, len(connections), 4):
     except Exception as e:
         sys.stdout = old_stdout
         print(e)
+        print("err")
         print(puzzle)
     
 print(f'On a set of {len(puzzles)} puzzles')
