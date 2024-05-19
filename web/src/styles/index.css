@@ -30,12 +30,16 @@ code {
 }
 
 h1,
-h2,
+h2 {
+    font-family: 'Volkron';
+}
+
 h3,
 h4,
 h5,
 h6 {
     font-family: 'Volkron';
+    margin: 0;
 }
 
 a {
@@ -52,8 +56,15 @@ button {
     cursor: pointer;
     font-size: 0.9rem;
     font-family: 'Franklin';
+    font-weight: 500;
 }
 
 button:hover {
     background-color: #444;
+}
+
+textarea {
+    resize: none;
+    font-family: 'Franklin';
+    font-size: 1rem;
 }

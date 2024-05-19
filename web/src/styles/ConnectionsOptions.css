@@ -1,0 +1,26 @@
+.data-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 5px;
+    text-align: left;
+}
+
+.row:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.row:hover,
+.row:nth-child(even):hover {
+    background-color: #ddd;
+    cursor: pointer;
+}
+
+#table-header {
+    cursor: auto !important;
+    background-color: inherit !important;
+}

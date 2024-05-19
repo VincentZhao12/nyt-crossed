@@ -1,0 +1,59 @@
+.popup-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex; /* Center the popup content horizontally */
+    justify-content: center;
+    align-items: center;
+    z-index: 100; /* Ensure popup is above other elements */
+}
+
+.popup-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+    text-align: center; /* Center content within the popup */
+}
+
+.button-container {
+    display: flex;
+    justify-content: space-around; /* Equally space buttons */
+    margin-top: 10px;
+}
+
+.button-container button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Optional styles for different button types (can be customized further) */
+.button-container button:nth-child(1) {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.button-container button:nth-child(2) {
+    background-color: #6f96e8;
+}
+
+.button-container button:nth-child(3) {
+    background-color: var(--connections-main);
+    color: #fff;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    color: #fff;
+    cursor: pointer;
+}
