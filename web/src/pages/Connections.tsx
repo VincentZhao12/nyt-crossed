@@ -178,6 +178,7 @@ const Connections: FC<ConnectionsProps> = () => {
             <div className="container">
                 <div className="left">
                     <div className="pane">
+                        {error && <ErrorComponent errorMessage={error} />}
                         <div className="label">
                             <input
                                 id="fileInput"
@@ -218,34 +219,41 @@ const Connections: FC<ConnectionsProps> = () => {
                         ''
                     )}
                 </div>
-
-                <div className="right">
-                    {loading ? (
-                        <Spinner />
-                    ) : error ? (
-                        <ErrorComponent errorMessage={error} />
-                    ) : (
-                        suggestions?.length && (
+                {(loading || (suggestions?.length || 0) > 0) && (
+                    <div className="right">
+                        {loading ? (
                             <>
-                                <div className="pane">
-                                    <ConnectionsOptions
-                                        data={suggestions}
-                                        onSelect={(words) => setWords(words)}
+                                <Spinner />
+                                <p>
+                                    Loading Connections. This can take 10-15
+                                    seconds
+                                </p>
+                            </>
+                        ) : (
+                            suggestions?.length && (
+                                <>
+                                    <div className="pane">
+                                        <ConnectionsOptions
+                                            data={suggestions}
+                                            onSelect={(words) =>
+                                                setWords(words)
+                                            }
+                                            words={options}
+                                        />
+                                    </div>
+                                    <ConnectionsPopup
+                                        isOpen={words.length !== 0}
+                                        onWin={win}
+                                        onThree={oneAway}
+                                        onNotThree={notOneAway}
+                                        onClose={() => setWords([])}
                                         words={words}
                                     />
-                                </div>
-                                <ConnectionsPopup
-                                    isOpen={words.length !== 0}
-                                    onWin={win}
-                                    onThree={oneAway}
-                                    onNotThree={notOneAway}
-                                    onClose={() => setWords([])}
-                                    words={options}
-                                />
-                            </>
-                        )
-                    )}
-                </div>
+                                </>
+                            )
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

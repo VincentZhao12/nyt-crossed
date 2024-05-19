@@ -21,7 +21,7 @@
 
 .button-container {
     display: flex;
-    justify-content: space-around; /* Equally space buttons */
+    justify-content: center; /* Equally space buttons */
     margin-top: 10px;
 }
 
@@ -30,6 +30,7 @@
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    margin: 0.5rem;
 }
 
 /* Optional styles for different button types (can be customized further) */
