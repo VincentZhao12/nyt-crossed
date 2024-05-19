@@ -13,7 +13,6 @@ def home():
     return "nyt crossed app backend"
 
 @app.route("/connections", methods=['POST'])
-@cross_origin()
 def connections():
     if "words" not in request.json:
         return "No words passed to server", 401
