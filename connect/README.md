@@ -1,10 +1,12 @@
 # Solving NYT Connections Games
 
-## On a set of 87 puzzles
+## On a set of 340 puzzles
 
-- Puzzles Solved: 15
-- Puzzle Solve Rate: 17.2%
-- Connections Made: 107 on 413 tries.
-- First connection rate: 60%
-- Connection Find Rate: 25.9%
-- Average Time Per Puzzle: 121.9s.
+-   Puzzles Solved: 35
+-   203 Puzzles with at least one connection solved
+-   Average Time Per Puzzle: 15.9s.
+-   20% of all connections found
+
+### Histogram of connections made per puzzle
+
+![histogram](histogram.JPG)
