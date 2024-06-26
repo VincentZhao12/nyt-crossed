@@ -38,3 +38,6 @@ def connections():
 @app.route("/wordle")
 def wordle():
     return "idk"
+
+if __name__ == "__main__":
+    app.run(debug=True)

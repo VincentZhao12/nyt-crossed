@@ -92,6 +92,7 @@ const Connections: FC<ConnectionsProps> = () => {
 
         try {
             const response = await fetch(
+                // 'https://nyt-crossed.uc.r.appspot.com/connections',
                 'http://127.0.0.1:5000/connections',
                 requestOptions,
             );

@@ -84,16 +84,16 @@ def similarity_4(a, b, c, d):
 def find_connections(words):
     wiki_df = make_wiki_df(words)
     
-    dict_df = pd.read_csv("data/dictionary.csv")
+    # dict_df = pd.read_csv("data/dictionary.csv")
 
-    dict_df["Word"] = dict_df["Word"].str.upper()
-    dict_df = dict_df[dict_df["Word"].isin(words)]
-    dict_df = dict_df.reset_index()
+    # dict_df["Word"] = dict_df["Word"].str.upper()
+    # dict_df = dict_df[dict_df["Word"].isin(words)]
+    # dict_df = dict_df.reset_index()
 
-    combined_words = pd.concat([wiki_df["Word"], dict_df["Word"]])
-    combined_defs = pd.concat([wiki_df["Definition"], dict_df["Definition"]])
+    # combined_words = pd.concat([wiki_df["Word"], dict_df["Word"]])
+    # combined_defs = pd.concat([wiki_df["Definition"], dict_df["Definition"]])
 
-    wiki_df = pd.DataFrame({"Word": combined_words, "Definition": combined_defs})
+    # wiki_df = pd.DataFrame({"Word": combined_words, "Definition": combined_defs})
 
     wiki_df["Definition"] = wiki_df["Definition"].astype(str)
     
